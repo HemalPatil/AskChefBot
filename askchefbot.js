@@ -8,19 +8,17 @@ var connector = new builder.ChatConnector();
 var bot = new builder.UniversalBot(connector);
 
 // '/' is the root dialog
-// this root dialog of the conversation should start only when user logs in for first time or after the entire recipe is cooked
-// TODO : start conversation after recipe complete instead of asking what to cook, ask choice based on previous recipe
 bot.dialog("/", 
 [
 	function (session, args, next)
 	{
 		session.send("Hello user!");	// TODO : replace "user" with the actual user's name
-		if(!session.conservationData.whatToCook)
+		if(!session.conversationData.whatToCook)
 		{
 			session.beginDialog("/whatToCook");
 		}
 	},
-	function (session, results)
+	function (session, results, next)
 	{
 		session.conversationData.whatToCook = results.response;
 		session.send("So you want to cook " + session.conversationData.whatToCook + " today");
@@ -32,8 +30,7 @@ bot.dialog("/whatToCook",
 [
 	function (session)
 	{
-		
-		builder.Prompts.choice(session, "What do you want to cook today?", );
+		builder.Prompts.text(session, "What do you want to cook today?");
 	},
 	function (session, results)
 	{
