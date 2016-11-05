@@ -1,11 +1,31 @@
 var builder = require("botbuilder");
+var model = require("./models.js");
+var mysql = require("mysql");
+var connection= mysql.createConnection(
+		{
+			host : "localhost",
+			database : "askchef",
+			user : "root",
+			password : ""
+		});
 
+		connection.connect(function (error)
+		{
+			if(error)
+			{
+				console.log("can\'t connect");
+				throw error;
+			}
+		});
 // create connector
 //var connector = new builder.ConsoleConnector().listen();
 var connector = new builder.ChatConnector();
 
 // create bot
 var bot = new builder.UniversalBot(connector);
+
+// connect to database
+model.startConnection();
 
 // '/' is the root dialog
 bot.dialog("/", 
@@ -26,11 +46,16 @@ bot.dialog("/",
 	}
 ]);
 
+function showWhatToCookPromptCallBack(session, array)
+{
+	builder.Prompts.choice(session, "Options", array);
+}
+
 bot.dialog("/whatToCook",
 [
-	function (session)
+	function (session, args, next)
 	{
-		builder.Prompts.text(session, "What do you want to cook today?");
+		model.getSearchCategories(session, showWhatToCookPromptCallBack);
 	},
 	function (session, results)
 	{
