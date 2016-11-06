@@ -112,7 +112,7 @@ bot.dialog("/getRecipeByCuisine",
 	{
 		if(results.response.entity == "YES")
 		{
-			session.beginDialog("/recipeSteps");
+			session.beginDialog("/recipeIngredients");
 		}		
 		else session.replaceDialog("/whatToCook");
 	}
@@ -141,7 +141,7 @@ bot.dialog("/getRecipeByOccasion",
 	{
 		if(results.response.entity == "YES") 
 		{
-			session.beginDialog("/recipeSteps");
+			session.beginDialog("/recipeIngredients");
 		}
 		else session.replaceDialog("/whatToCook");
 	}
