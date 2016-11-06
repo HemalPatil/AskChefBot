@@ -1,22 +1,6 @@
 var builder = require("botbuilder");
 var model = require("./models.js");
-var mysql = require("mysql");
-var connection= mysql.createConnection(
-		{
-			host : "localhost",
-			database : "askchef",
-			user : "root",
-			password : ""
-		});
 
-		connection.connect(function (error)
-		{
-			if(error)
-			{
-				console.log("can\'t connect");
-				throw error;
-			}
-		});
 // create connector
 //var connector = new builder.ConsoleConnector().listen();
 var connector = new builder.ChatConnector();
@@ -40,15 +24,30 @@ bot.dialog("/",
 	},
 	function (session, results, next)
 	{
-		session.conversationData.whatToCook = results.response;
-		session.send("So you want to cook " + session.conversationData.whatToCook + " today");
-		session.send("Let me search the recipe for it!");
+		session.conversationData.whatToCook = results.response.entity;
+		session.send("Let me search the recipe for " + session.conversationData.whatToCook);
 	}
 ]);
 
 function showWhatToCookPromptCallBack(session, array)
 {
-	builder.Prompts.choice(session, "Options", array);
+	builder.Prompts.choice(session, "What do you have in mind? You can search recipes by these options or by name", array);
+}
+
+function showCuisinePromptCallBack(session, array)
+{
+	builder.Prompts.choice(session, "Choose a cuisine", array);
+}
+
+function showOccasionPromptCallBack(session, array)
+{
+	builder.Prompts.choice(session, "Choose an occasion", array);
+}
+
+function showRecipeListPromptCallBack(session, array)
+{
+	console.log(array);
+	builder.Prompts.choice(session, "How about these?", array);
 }
 
 bot.dialog("/whatToCook",
@@ -57,11 +56,135 @@ bot.dialog("/whatToCook",
 	{
 		model.getSearchCategories(session, showWhatToCookPromptCallBack);
 	},
+	function (session, results, next)
+	{
+		switch(results.response.entity.toLowerCase())
+		{
+			case "cuisine" :
+				session.beginDialog("/getRecipeByCuisine");
+				break;
+			case "occasion" :
+				session.beginDialog("/getRecipeByOccasion");
+				break;
+			case "ingredient" :
+				session.beginDialog("/getRecipeByIngredient");
+				break;
+			case "recipe name" :
+				session.beginDialog("/getRecipeByName");
+				break;
+			default:
+				session.send("I did not get you. Please select an option.");
+				break;
+		}
+	},
+	function(session, results, next)
+	{
+		console.log(results.response.entity);
+		session.send("Let's cook "+ results.response.entity);
+	},
 	function (session, results)
 	{
 		session.endDialogWithResult(results);
 	}
 ])
+
+bot.dialog("/getRecipeByCuisine",
+[
+	function(session, args, next)
+	{
+		model.getCuisines(session, showCuisinePromptCallBack);
+	},
+	function(session, results, next)
+	{
+		var cuisineName = results.response.entity;
+		model.getRecipesByCuisine(session, cuisineName, showRecipeListPromptCallBack);
+	},
+	function(session, results, next)
+	{
+		console.log(results);
+		var recipeName = [];
+		recipeName[0] = results.response.entity;
+		var yes = ["YES", "NO"];
+		builder.Prompts.choice(session, "Let's cook " + recipeName, yes);
+	},
+	function(session, results, next)
+	{
+		if(results.response.entity == "YES") session.send("OK");
+		else session.replaceDialog("/whatToCook");
+	}
+])
+
+bot.dialog("/getRecipeByOccasion",
+[
+	function(session, args, next)
+	{
+		model.getOccasions(session, showOccasionPromptCallBack);
+	},
+	function(session, results, next)
+	{
+		var occasionName = results.response.entity;
+		model.getRecipesByOccasion(session, occasionName, showRecipeListPromptCallBack);
+	},
+	function(session, results, next)
+	{
+		var recipeName = [];
+		recipeName[0] = results.response.entity;
+		var yes = ["YES", "NO"];
+		builder.Prompts.choice(session, "Let's cook "+recipeName, yes);
+	},
+	function(session, results, next)
+	{
+		if(results.response.entity == "YES") session.send("OK");
+		else session.replaceDialog("/whatToCook");
+	}
+])
+
+bot.dialog("/getRecipeByIngredient",
+[
+	function(session, args, next)
+	{
+		builder.Prompts.text(session, "Enter the name of the ingredient.");
+	},
+	function(session, results, next)
+	{
+		var ingredientName = results.response;
+		model.getRecipesByIngredient(session, ingredientName, showRecipeListPromptCallBack);
+	},
+	function(session, results)
+	{
+		session.endDialogWithResult(results);
+	}
+])
+
+bot.dialog("/getRecipeByName",
+[
+	function(session, args, next)
+	{
+		builder.Prompts.text(session, "Enter the name of the recipe.");
+	},
+	function(session, results, next)
+	{
+		var recipeName = results.response;
+		model.getRecipesByName(session, recipeName, showRecipeListPromptCallBack);
+	},
+	function(session, results, next)
+	{
+		var recipeName = [];
+		recipeName[0] = results.response.entity;
+		var yes = ["YES", "NO"];
+		builder.Prompts.choice(session, "Let's cook "+recipeName, yes);
+	},
+	function(session, results, next)
+	{
+		if(results.response.entity == "YES") session.send("OK");
+		else session.replaceDialog("/whatToCook");
+	},
+	function(session, results)
+	{
+		session.endDialogWithResult(results);
+	}
+])
+
 
 // create server
 var restify = require("restify");
