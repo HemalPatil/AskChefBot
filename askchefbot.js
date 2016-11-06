@@ -17,15 +17,15 @@ bot.dialog("/",
 	function (session, args, next)
 	{
 		session.send("Hello user!");	// TODO : replace "user" with the actual user's name
-		if(!session.conversationData.whatToCook)
+		if(!session.userData.whatToCook)
 		{
 			session.beginDialog("/whatToCook");
 		}
 	},
 	function (session, results, next)
 	{
-		session.conversationData.whatToCook = results.response.entity;
-		session.send("Let me search the recipe for " + session.conversationData.whatToCook);
+		session.userData.whatToCook = results.response.entity;
+		session.send("Let me search the recipe for " + session.userData.whatToCook);
 	}
 ]);
 
@@ -86,7 +86,7 @@ bot.dialog("/whatToCook",
 	{
 		session.endDialogWithResult(results);
 	}
-])
+]);
 
 bot.dialog("/getRecipeByCuisine",
 [
@@ -105,14 +105,18 @@ bot.dialog("/getRecipeByCuisine",
 		var recipeName = [];
 		recipeName[0] = results.response.entity;
 		var yes = ["YES", "NO"];
+		session.userData.whatToCook = recipeName[0];
 		builder.Prompts.choice(session, "Let's cook " + recipeName, yes);
 	},
 	function(session, results, next)
 	{
-		if(results.response.entity == "YES") session.send("OK");
+		if(results.response.entity == "YES")
+		{
+			session.beginDialog("/recipeSteps");
+		}		
 		else session.replaceDialog("/whatToCook");
 	}
-])
+]);
 
 bot.dialog("/getRecipeByOccasion",
 [
@@ -130,14 +134,18 @@ bot.dialog("/getRecipeByOccasion",
 		var recipeName = [];
 		recipeName[0] = results.response.entity;
 		var yes = ["YES", "NO"];
+		session.userData.whatToCook = recipeName[0];
 		builder.Prompts.choice(session, "Let's cook "+recipeName, yes);
 	},
 	function(session, results, next)
 	{
-		if(results.response.entity == "YES") session.send("OK");
+		if(results.response.entity == "YES") 
+		{
+			session.beginDialog("/recipeSteps");
+		}
 		else session.replaceDialog("/whatToCook");
 	}
-])
+]);
 
 bot.dialog("/getRecipeByIngredient",
 [
@@ -154,7 +162,7 @@ bot.dialog("/getRecipeByIngredient",
 	{
 		session.endDialogWithResult(results);
 	}
-])
+]);
 
 bot.dialog("/getRecipeByName",
 [
@@ -169,21 +177,56 @@ bot.dialog("/getRecipeByName",
 	},
 	function(session, results, next)
 	{
-		var recipeName = [];
-		recipeName[0] = results.response.entity;
+		var recipeName = results.response.entity;
 		var yes = ["YES", "NO"];
-		builder.Prompts.choice(session, "Let's cook "+recipeName, yes);
+		session.userData.whatToCook = recipeName;
+		console.log("recipe name lolz " + session.userData.whatToCook);
+		builder.Prompts.choice(session, "Let's cook " + recipeName, yes);
 	},
 	function(session, results, next)
 	{
-		if(results.response.entity == "YES") session.send("OK");
-		else session.replaceDialog("/whatToCook");
+		console.log("recipe name lolwa " + session.userData.whatToCook);
+		if(results.response.entity == "YES") 
+		{
+			session.beginDialog("/recipeSteps");
+		}
+		else
+		{
+			session.userData.whatToCook = null;
+			session.replaceDialog("/whatToCook")
+		}
 	},
 	function(session, results)
 	{
 		session.endDialogWithResult(results);
 	}
-])
+]);
+
+function recipeIngredientsCallBack(session, ingredientsArray)
+{
+	session.send("The ingredients are : ");
+	for(var i in ingredientsArray)
+	{
+		session.send(ingredientsArray[i]);
+	}
+}
+
+bot.dialog("/recipeSteps",
+[
+	function(session, args, next)
+	{
+		var recipe = session.userData.whatToCook;
+		console.log("recipe steps " + recipe);
+		model.getRecipeIngredients(session, recipe, recipeIngredientsCallBack);
+	},
+	function(session, results, next)
+	{
+		if(results.response.entity == "DONE")
+		{
+
+		}
+	}
+]);
 
 
 // create server

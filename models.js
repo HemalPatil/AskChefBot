@@ -203,5 +203,40 @@ module.exports =
 				dialogCallBack(session, recipe);
 			}
 		})
+	},
+
+	getRecipeIngredients : function (session, recipeName, dialogCallBack)
+	{
+		console.log(recipeName);
+		var data = recipeName.toUpperCase();
+		connection.query("SELECT id FROM recipe where name = ?", [data], function(error, rows)
+		{
+			if(error)
+			{
+				console.log("rows not found");
+				throw error;
+			}
+			else
+			{
+				var recipeID = rows[0].id;
+				connection.query("SELECT recipe_ingredient.*, ingredient.name as ingredientname FROM recipe LEFT JOIN recipe_ingredient ON recipe.id=recipe_ingredient.recipeid LEFT JOIN ingredient ON recipe_ingredient.ingredientid=ingredient.id WHERE recipe.id=?", [recipeID], function(error, rows)
+				{
+					if(error)
+					{
+						console.log("rows not found");
+						throw error;
+					}
+					else
+					{
+						var ingredientList = [];
+						for(var i in rows)
+						{
+							ingredientList[i] = rows[i].quantity+" "+rows[i].ingredientname;
+						}
+						dialogCallBack(session, ingredientList);
+					}
+				});
+			}
+		})
 	}
 }
