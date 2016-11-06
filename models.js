@@ -129,7 +129,7 @@ module.exports =
 				}
 				dialogCallBack(session, occasionList);
 			}
-		})
+		});
 	},
 
 	getRecipesByOccasion :function(session, occasionName, dialogCallBack)
@@ -202,7 +202,7 @@ module.exports =
 				recipe[0] = rows[0].name;
 				dialogCallBack(session, recipe);
 			}
-		})
+		});
 	},
 
 	getRecipeIngredients : function (session, recipeName, dialogCallBack)
@@ -237,6 +237,53 @@ module.exports =
 					}
 				});
 			}
-		})
+		});
+	},
+
+	endOfRecipe : "endOfRecipe",
+
+	getRecipeSteps : function(session, recipeName, stepCount, dialogCallBack)
+	{
+		var data = recipeName.toUpperCase();
+		connection.query("SELECT id FROM recipe where name = ?", [data], function(error, rows)
+		{
+			if(error)
+			{
+				console.log("rows not found");
+				throw error;
+			}
+			else
+			{
+				console.log(rows);
+				var recipeID = rows[0].id;
+				for(var i in rows)
+				{
+					rows[i].id;
+				}
+				connection.query("SELECT * FROM recipe_steps where recipeid = ? AND number = ?", [recipeID, stepCount], function(error, rows)
+				{
+					if(error || rows.length == 0)
+					{
+						if(stepCount!=1)
+						{
+							dialogCallBack(session, "endOfRecipe");
+						}
+						else
+						{
+							console.log("rows not found");
+							if(error)
+							{
+								throw error;
+							}
+						}
+					}
+					else
+					{
+						console.log("step row : ", rows);
+						dialogCallBack(session, rows[0]);
+					}
+				});
+			}
+		});
 	}
 }

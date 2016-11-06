@@ -188,7 +188,7 @@ bot.dialog("/getRecipeByName",
 		console.log("recipe name lolwa " + session.userData.whatToCook);
 		if(results.response.entity == "YES") 
 		{
-			session.beginDialog("/recipeSteps");
+			session.beginDialog("/recipeIngredients");
 		}
 		else
 		{
@@ -209,9 +209,10 @@ function recipeIngredientsCallBack(session, ingredientsArray)
 	{
 		session.send(ingredientsArray[i]);
 	}
+	builder.Prompts.choice(session, "All set?", ["DONE"]);
 }
 
-bot.dialog("/recipeSteps",
+bot.dialog("/recipeIngredients",
 [
 	function(session, args, next)
 	{
@@ -223,11 +224,48 @@ bot.dialog("/recipeSteps",
 	{
 		if(results.response.entity == "DONE")
 		{
-
+			session.userData.stepCount=1;
+			session.send("Let's start making " + session.userData.whatToCook + " then.");
+			session.beginDialog("/recipeSteps");
 		}
 	}
 ]);
 
+function showRecipeStepCallBack(session, step)
+{
+	console.log("step callback : " + step);
+	if(step != model.endOfRecipe)
+	{
+		session.send(step.step);
+		builder.Prompts.choice(session, "Are you done? ", ["DONE"]);
+	}
+	else
+	{
+		session.send("Happy fooding!");
+	}
+}
+
+bot.dialog("/recipeSteps",
+[
+	function(session, args, next)
+	{
+		console.log("recipe steps " + session.userData.stepCount + " " + session.userData.whatToCook);
+		model.getRecipeSteps(session, session.userData.whatToCook, session.userData.stepCount, showRecipeStepCallBack);
+	},
+	function(session, results, next)
+	{
+		if(results.response.entity=="DONE")
+		{
+			session.userData.stepCount++;
+			session.replaceDialog("/recipeSteps");
+		}
+		else
+		{
+			session.userData.stepCount=null;
+			session.endConversation();
+		}
+	}
+]);
 
 // create server
 var restify = require("restify");
